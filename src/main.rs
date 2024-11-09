@@ -11,11 +11,11 @@ fn main() {
         incoming.write_all(b", I am glad to meet you\r\n").unwrap();
         loop {
             let data = read_timeout(&mut incoming);
-            incoming.write_all(b"250 Ok\r\n").unwrap();
-            println!("Header: {}", String::from_utf8_lossy(&data));
             if data == b"DATA\r\n" {
                 break;
             }
+            incoming.write_all(b"250 Ok\r\n").unwrap();
+            println!("Header: {}", String::from_utf8_lossy(&data));
         }
         incoming.write_all(b"354 End data with <CR><LF>.<CR><LF>\r\n").unwrap();
         let data = read_timeout(&mut incoming);
