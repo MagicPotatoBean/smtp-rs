@@ -34,7 +34,7 @@ fn main() {
         let data = read_timeout(&mut incoming);
 
         let x = regex::bytes::Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
-        let urls = x.find(&data);
+        let urls = x.find_iter(&data);
 
         println!("{}", String::from_utf8_lossy(&data));
         write!(file, "S: {}\r\n", String::from_utf8_lossy(&data)).unwrap();
@@ -49,7 +49,7 @@ fn main() {
         println!("CONNECTION CLOSED");
         write!(file, "CONNECTION CLOSED\r\n").unwrap();
 
-        for url in urls.iter() {
+        for url in urls {
             println!("URL FOUND: {}", String::from_utf8_lossy(url.as_bytes()));
             write!(file, "URL FOUND: {}\r\n", String::from_utf8_lossy(url.as_bytes())).unwrap();
         }
