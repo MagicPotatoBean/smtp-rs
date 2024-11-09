@@ -11,6 +11,7 @@ fn main() {
         incoming.write_all(b", I am glad to meet you\r\n").unwrap();
         loop {
             let data = read_timeout(&mut incoming);
+            incoming.write_all(b"250 Ok\r\n").unwrap();
             println!("{}", String::from_utf8_lossy(&data));
             if data == b"DATA\r\n" {
                 break;
