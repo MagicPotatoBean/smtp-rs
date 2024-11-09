@@ -33,10 +33,8 @@ fn main() {
         file.write_all(b"C: 354 End data with <CR><LF>.<CR><LF>\r\n").unwrap();
         let data = read_timeout(&mut incoming);
 
-        let x = regex::bytes::Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
-        let y = regex::bytes::Regex::new(r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
+        let x = regex::bytes::Regex::new(r"(https?://)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
         let urls = x.find_iter(&data);
-        let http_urls = y.find_iter(&data);
 
         println!("{}", String::from_utf8_lossy(&data));
         write!(file, "S: {}\r\n", String::from_utf8_lossy(&data)).unwrap();
@@ -54,10 +52,6 @@ fn main() {
         for url in urls {
             println!("URL FOUND: {}", String::from_utf8_lossy(url.as_bytes()));
             write!(file, "URL FOUND: {}\r\n", String::from_utf8_lossy(url.as_bytes())).unwrap();
-        }
-        for url in http_urls {
-            println!("HTTP(s) URL FOUND: {}", String::from_utf8_lossy(url.as_bytes()));
-            write!(file, "HTTP(s) URL FOUND: {}\r\n", String::from_utf8_lossy(url.as_bytes())).unwrap();
         }
     }
 }
