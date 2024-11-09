@@ -18,7 +18,7 @@ fn main() {
             }
         }
         incoming.write_all(b"354 End data with <CR><LF>.<CR><LF>\r\n").unwrap();
-
+        let data = read_timeout(&mut incoming);
         println!("{}", String::from_utf8_lossy(&data));
     }
 }
