@@ -1,5 +1,7 @@
 use std::{io::{Read, Write}, net::{TcpListener, TcpStream}, time::Duration};
 
+use regex::Regex;
+
 fn main() {
     let mut file = std::fs::OpenOptions::new().append(true).create(true).open("./email_log").unwrap();
     let listener = TcpListener::bind("0.0.0.0:25").unwrap();
@@ -19,6 +21,7 @@ fn main() {
         loop {
             let data = read_timeout(&mut incoming);
             if data == b"DATA\r\n" {
+                file.write_all(b"S: DATA\r\n").unwrap();
                 break;
             }
             incoming.write_all(b"250 Ok\r\n").unwrap();
@@ -29,6 +32,10 @@ fn main() {
         incoming.write_all(b"354 End data with <CR><LF>.<CR><LF>\r\n").unwrap();
         file.write_all(b"C: 354 End data with <CR><LF>.<CR><LF>\r\n").unwrap();
         let data = read_timeout(&mut incoming);
+
+        let x = regex::bytes::Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
+        let urls = x.find(&data);
+
         println!("{}", String::from_utf8_lossy(&data));
         write!(file, "S: {}", String::from_utf8_lossy(&data)).unwrap();
         incoming.write_all(b"250 Ok: queued as 12345\r\n").unwrap();
@@ -41,6 +48,10 @@ fn main() {
         incoming.shutdown(std::net::Shutdown::Both).unwrap();
         println!("CONNECTION CLOSED");
         write!(file, "CONNECTION CLOSED").unwrap();
+
+        for url in urls.iter() {
+            println!("URL FOUND: {}", String::from_utf8_lossy(url.as_bytes()));
+        }
     }
 }
 fn read_timeout(stream: &mut TcpStream) -> Vec<u8> {
