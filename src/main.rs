@@ -11,7 +11,7 @@ fn main() {
         file.write_all(b"C: 220 zoe.soutter.com ESMTP Postfix\r\n").unwrap();
         let data = read_timeout(&mut incoming);
         println!("Intro: {}", String::from_utf8_lossy(&data));
-        write!(file, "S: {}", String::from_utf8_lossy(&data)).unwrap();
+        write!(file, "S: {}\r\n", String::from_utf8_lossy(&data)).unwrap();
         incoming.write_all(b"250 Hello ").unwrap();
         incoming.write_all(&data[5..(data.len() - 2)]).unwrap();
         incoming.write_all(b", I am glad to meet you\r\n").unwrap();
@@ -27,7 +27,7 @@ fn main() {
             incoming.write_all(b"250 Ok\r\n").unwrap();
             file.write_all(b"C: 250 Ok\r\n").unwrap();
             println!("S: {}", String::from_utf8_lossy(&data));
-        write!(file, "S: {}", String::from_utf8_lossy(&data)).unwrap();
+        write!(file, "S: {}\r\n", String::from_utf8_lossy(&data)).unwrap();
         }
         incoming.write_all(b"354 End data with <CR><LF>.<CR><LF>\r\n").unwrap();
         file.write_all(b"C: 354 End data with <CR><LF>.<CR><LF>\r\n").unwrap();
@@ -37,21 +37,21 @@ fn main() {
         let urls = x.find(&data);
 
         println!("{}", String::from_utf8_lossy(&data));
-        write!(file, "S: {}", String::from_utf8_lossy(&data)).unwrap();
+        write!(file, "S: {}\r\n", String::from_utf8_lossy(&data)).unwrap();
         incoming.write_all(b"250 Ok: queued as 12345\r\n").unwrap();
         file.write_all(b"C: 250 Ok: queued as 12345\r\n").unwrap();
         let data = read_timeout(&mut incoming);
         println!("{}", String::from_utf8_lossy(&data));
-        write!(file, "{}", String::from_utf8_lossy(&data)).unwrap();
+        write!(file, "{}\r\n", String::from_utf8_lossy(&data)).unwrap();
         incoming.write_all(b"221 Bye\r\n").unwrap();
         file.write_all(b"C: 221 Bye\r\n").unwrap();
         incoming.shutdown(std::net::Shutdown::Both).unwrap();
         println!("CONNECTION CLOSED");
-        write!(file, "CONNECTION CLOSED").unwrap();
+        write!(file, "CONNECTION CLOSED\r\n").unwrap();
 
         for url in urls.iter() {
             println!("URL FOUND: {}", String::from_utf8_lossy(url.as_bytes()));
-            write!(file, "URL FOUND: {}", String::from_utf8_lossy(url.as_bytes())).unwrap();
+            write!(file, "URL FOUND: {}\r\n", String::from_utf8_lossy(url.as_bytes())).unwrap();
         }
     }
 }
