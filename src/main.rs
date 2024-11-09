@@ -20,6 +20,11 @@ fn main() {
         incoming.write_all(b"354 End data with <CR><LF>.<CR><LF>\r\n").unwrap();
         let data = read_timeout(&mut incoming);
         println!("{}", String::from_utf8_lossy(&data));
+        incoming.write_all(b"250 Ok: queued as 12345\r\n").unwrap();
+        let data = read_timeout(&mut incoming);
+        println!("{}", String::from_utf8_lossy(&data));
+        incoming.write_all(b"221 Bye\r\n").unwrap();
+        incoming.shutdown(std::net::Shutdown::Both).unwrap();
     }
 }
 fn read_timeout(stream: &mut TcpStream) -> Vec<u8> {
