@@ -51,6 +51,7 @@ fn main() {
 
         for url in urls.iter() {
             println!("URL FOUND: {}", String::from_utf8_lossy(url.as_bytes()));
+            write!(file, "URL FOUND: {}", String::from_utf8_lossy(url.as_bytes())).unwrap();
         }
     }
 }
