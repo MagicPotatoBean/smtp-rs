@@ -5,14 +5,14 @@ fn main() {
     for mut incoming in listener.incoming().flatten() {
         incoming.write_all(b"220 zoe.soutter.com ESMTP Postfix\r\n").unwrap();
         let data = read_timeout(&mut incoming);
-        println!("{}", String::from_utf8_lossy(&data));
+        println!("Intro: {}", String::from_utf8_lossy(&data));
         incoming.write_all(b"250 Hello ").unwrap();
-        incoming.write_all(&data).unwrap();
+        incoming.write_all(&data[5..(data.len() - 2)]).unwrap();
         incoming.write_all(b", I am glad to meet you\r\n").unwrap();
         loop {
             let data = read_timeout(&mut incoming);
             incoming.write_all(b"250 Ok\r\n").unwrap();
-            println!("{}", String::from_utf8_lossy(&data));
+            println!("Header: {}", String::from_utf8_lossy(&data));
             if data == b"DATA\r\n" {
                 break;
             }
