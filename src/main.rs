@@ -33,7 +33,7 @@ fn main() {
         file.write_all(b"C: 354 End data with <CR><LF>.<CR><LF>\r\n").unwrap();
         let data = read_timeout(&mut incoming);
 
-        let x = regex::bytes::Regex::new(r"(https?://)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
+        let x = regex::bytes::Regex::new(r"(https?://)?[-a-zA-Z0-9%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
         let urls = x.find_iter(&data);
 
         println!("{}", String::from_utf8_lossy(&data));
