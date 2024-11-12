@@ -102,7 +102,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
         if recipient.is_safe() && recipient.domain == "zoe.soutter.com" && sender.is_safe() {
             let time = chrono::Local::now().format("%Y.%m.%d-%H:%M:%S").to_string();
             let path = format!("./inboxes/{}@{}/{}@{}-{}.email", recipient.username, recipient.domain, sender.username, sender.domain, time);
-            let _ = std::fs::create_dir(format!("./{}@{}", recipient.username, recipient.domain));
+            let _ = std::fs::create_dir(format!("./inboxes/{}@{}", recipient.username, recipient.domain));
             if let Ok(mut file) = std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
                 file.write_all(&body_data)?;
             } else {
