@@ -14,30 +14,31 @@ fn main() {
         .unwrap();
     let listener = TcpListener::bind("0.0.0.0:25").unwrap();
 
+    let x = regex::bytes::Regex::new(r"(https?://)?[-a-zA-Z0-9%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
+
     for mut incoming in listener.incoming().flatten() {
         let Ok(email) = parse_smtp_packet(&mut incoming) else {continue;};
-        let x = regex::bytes::Regex::new(r"(https?://)?[-a-zA-Z0-9%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
         let urls = x.find_iter(&email.body);
         for url in urls {
             println!("URL found: {}", String::from_utf8_lossy(url.as_bytes()));
         }
     }
 }
-fn read_timeout(stream: &mut TcpStream) -> Vec<u8> {
+fn read_timeout(stream: &mut TcpStream) -> std::io::Result<Vec<u8>> {
     let mut buffer = Vec::new();
     stream
-        .set_read_timeout(Some(Duration::from_millis(100)))
-        .unwrap();
+        .set_read_timeout(Some(Duration::from_millis(100)))?;
     if let Err(err) = stream.read_to_end(&mut buffer) {
         if std::io::ErrorKind::WouldBlock != err.kind() {
             println!("{err:?}");
         }
     }
-    buffer
+    Ok(buffer)
 }
 fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
     stream.write_all(b"220 zoe.soutter.com ESMTP Postfix\r\n")?;
-    let data = read_timeout(stream);
+    println!("Got request, introduced self");
+    let data = read_timeout(stream)?;
     if data.len() <= 5 {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
@@ -55,7 +56,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
     let mut recipients = Vec::new();
     let mut sender = None;
     loop {
-        let data = read_timeout(stream);
+        let data = read_timeout(stream)?;
         if let Ok(val) = prse::try_parse!(String::from_utf8_lossy(&data), "MAIL FROM:<{}>\r\n") {
             let val: String = val;
             if let Some((username, domain)) = val.split_once("@") {
@@ -76,7 +77,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
             }
             stream.write_all(b"250 Ok\r\n")?;
         } else if &data == b"DATA\r\n" {
-            let data = read_timeout(stream);
+            let data = read_timeout(stream)?;
             stream.write_all(b"354 End data with <CR><LF>.<CR><LF>\r\n")?;
             break;
         } else {
@@ -95,7 +96,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
             "Client addressed no recipients",
         ));
     }
-    let body_data = read_timeout(stream);
+    let body_data = read_timeout(stream)?;
     stream.write_all(b"250 Ok: Queued as\r\n")?;
     for recipient in recipients.iter().cloned() {
         if recipient.is_safe() && recipient.domain == "zoe.soutter.com" && sender.is_safe() {
@@ -109,7 +110,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
             }
         }
     }
-    let response = read_timeout(stream);
+    let response = read_timeout(stream)?;
     if response == b"QUIT\r\n" {
         stream.write_all(b"221 Bye\r\n")?;
         stream.shutdown(std::net::Shutdown::Both)?;
@@ -118,9 +119,15 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
             from_address: sender,
             body: body_data,
         });
+    } else {
+        println!("Client didnt call QUIT, forcing shutdown");
+        stream.shutdown(std::net::Shutdown::Both)?;
+        return Ok(IncomingEmail {
+            to_addresses: recipients,
+            from_address: sender,
+            body: body_data,
+        });
     }
-
-    todo!()
 }
 #[derive(Clone, Debug)]
 struct EmailAddress {
