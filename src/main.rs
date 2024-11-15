@@ -18,6 +18,8 @@ fn main() {
 
     for mut incoming in listener.incoming().flatten() {
         let Ok(email) = parse_smtp_packet(&mut incoming) else {continue;};
+        println!("{}\n============================================================================", String::from_utf8_lossy(&email.body));
+        let x = regex::bytes::Regex::new(r"(https?://)?[-a-zA-Z0-9%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
         let urls = x.find_iter(&email.body);
         for url in urls {
             println!("URL found: {}", String::from_utf8_lossy(url.as_bytes()));
@@ -109,6 +111,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
                 println!("Failed to create email file for {}", path);
             }
         }
+        println!("Unsafe client {}@{}", recipient.username, recipient.domain);
     }
     let response = read_timeout(stream)?;
     if response == b"QUIT\r\n" {
