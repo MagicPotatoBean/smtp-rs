@@ -20,7 +20,7 @@ fn main() {
         let email = match parse_smtp_packet(&mut incoming) {
             Ok(email) => email,
             Err(err) => {
-                println("Hit error: {err:?}");
+                println!("Hit error: {err:?}");
                 continue;
             }
         };
