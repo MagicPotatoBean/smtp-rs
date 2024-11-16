@@ -17,8 +17,17 @@ fn main() {
     let x = regex::bytes::Regex::new(r"(https?://)?[-a-zA-Z0-9%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
 
     for mut incoming in listener.incoming().flatten() {
-        let Ok(email) = parse_smtp_packet(&mut incoming) else {continue;};
-        println!("{}\n============================================================================", String::from_utf8_lossy(&email.body));
+        let email = match parse_smtp_packet(&mut incoming) {
+            Ok(email) => email,
+            Err(err) => {
+                println("Hit error: {err:?}");
+                continue;
+            }
+        };
+        println!(
+            "{}\n============================================================================",
+            String::from_utf8_lossy(&email.body)
+        );
         let x = regex::bytes::Regex::new(r"(https?://)?[-a-zA-Z0-9%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
         let urls = x.find_iter(&email.body);
         for url in urls {
@@ -28,8 +37,7 @@ fn main() {
 }
 fn read_timeout(stream: &mut TcpStream) -> std::io::Result<Vec<u8>> {
     let mut buffer = Vec::new();
-    stream
-        .set_read_timeout(Some(Duration::from_millis(100)))?;
+    stream.set_read_timeout(Some(Duration::from_millis(100)))?;
     if let Err(err) = stream.read_to_end(&mut buffer) {
         if std::io::ErrorKind::WouldBlock != err.kind() {
             println!("{err:?}");
@@ -103,9 +111,19 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
     for recipient in recipients.iter().cloned() {
         if recipient.is_safe() && recipient.domain == "zoe.soutter.com" && sender.is_safe() {
             let time = chrono::Local::now().format("%Y.%m.%d-%H:%M:%S").to_string();
-            let path = format!("./inboxes/{}@{}/{}@{}-{}.email", recipient.username, recipient.domain, sender.username, sender.domain, time);
-            let _ = std::fs::create_dir(format!("./inboxes/{}@{}", recipient.username, recipient.domain));
-            if let Ok(mut file) = std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
+            let path = format!(
+                "./inboxes/{}@{}/{}@{}-{}.email",
+                recipient.username, recipient.domain, sender.username, sender.domain, time
+            );
+            let _ = std::fs::create_dir(format!(
+                "./inboxes/{}@{}",
+                recipient.username, recipient.domain
+            ));
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)
+            {
                 file.write_all(&body_data)?;
             } else {
                 println!("Failed to create email file for {}", path);
@@ -139,8 +157,11 @@ struct EmailAddress {
 }
 impl EmailAddress {
     fn is_safe(&self) -> bool {
-        self.username.chars().all(|chr| chr.is_alphanumeric() || chr == '+' || chr == '-' || chr == '_' || chr == '.')
-        && self.domain.chars().all(|chr| chr.is_alphanumeric() || chr == '+' || chr == '-' || chr == '_' || chr == '.')
+        self.username.chars().all(|chr| {
+            chr.is_alphanumeric() || chr == '+' || chr == '-' || chr == '_' || chr == '.'
+        }) && self.domain.chars().all(|chr| {
+            chr.is_alphanumeric() || chr == '+' || chr == '-' || chr == '_' || chr == '.'
+        })
     }
 }
 #[derive(Clone, Debug)]
