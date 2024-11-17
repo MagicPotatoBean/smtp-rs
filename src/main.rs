@@ -134,7 +134,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
                 if eq == '=' {
                     if let (Some(a), Some(b)) = (val1.to_digit(16), val2.to_digit(16)) {
                         let chr = char::from_u32(a.shl(4) + b).unwrap();
-                        skip_n += 1;
+                        skip_n = 2;
                         println!("FOUND ESCAPE CODE: {eq}{val1}{val2} replaced with {chr}");
                         Some(chr)
                     } else {
