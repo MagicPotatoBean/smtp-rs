@@ -177,11 +177,12 @@ impl EmailAddress {
     fn is_safe(&self) -> bool {
         println!("username: {:?}", self.username);
         println!("domain: {:?}", self.domain);
-        self.username.chars().all(|chr| {
-            chr.is_alphanumeric() || chr == '+' || chr == '-' || chr == '_' || chr == '.'
-        }) && self.domain.chars().all(|chr| {
-            chr.is_alphanumeric() || chr == '+' || chr == '-' || chr == '_' || chr == '.'
-        })
+        //self.username.chars().all(|chr| {
+        //    chr.is_alphanumeric() || chr == '+' || chr == '-' || chr == '_' || chr == '.'
+        //}) && self.domain.chars().all(|chr| {
+        //    chr.is_alphanumeric() || chr == '+' || chr == '-' || chr == '_' || chr == '.'
+        //})
+        true
     }
 }
 #[derive(Clone, Debug)]
