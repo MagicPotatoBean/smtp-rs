@@ -16,8 +16,6 @@ fn main() {
         .unwrap();
     let listener = TcpListener::bind("0.0.0.0:25").unwrap();
 
-    let x = regex::bytes::Regex::new(r"(https?://)?[-a-zA-Z0-9%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
-
     for mut incoming in listener.incoming().flatten() {
         let email = match parse_smtp_packet(&mut incoming) {
             Ok(email) => email,
@@ -124,7 +122,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
     }
     println!("Reading body");
     let body_data = read_timeout(stream)?;
-    let mut body_data = String::from_utf8_lossy(&body_data).replace("=\r\n", "\n");
+    let mut body_data = String::from_utf8_lossy(&body_data).replace("=\r\n", "");
 
     let mut skip_n = 0;
     body_data = body_data
