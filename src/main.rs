@@ -1,6 +1,8 @@
+#![feature(iter_map_windows)]
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
+    ops::Shl,
     time::Duration,
 };
 
@@ -122,6 +124,22 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
     }
     println!("Reading body");
     let body_data = read_timeout(stream)?;
+    let mut body_data = String::from_utf8_lossy(&body_data).replace("=\r\n", "\n");
+    body_data = body_data
+        .chars()
+        .map_windows(|&[eq, val1, val2]| {
+            if eq == '=' {
+                if let (Some(a), Some(b)) = (val1.to_digit(16), val2.to_digit(16)) {
+                    vec![char::from_u32(a.shl(4) + b).unwrap()]
+                } else {
+                    vec![eq, val1, val2]
+                }
+            } else {
+                vec![eq, val1, val2]
+            }
+        })
+        .flatten()
+        .collect();
     stream.write_all(b"250 Ok: Queued as\r\n")?;
     for recipient in recipients.iter().cloned() {
         if recipient.is_safe() && recipient.domain == "zoe.soutter.com" && sender.is_safe() {
@@ -142,7 +160,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
                 .create_new(true)
                 .open(&path)
             {
-                file.write_all(&body_data)?;
+                file.write_all(body_data.as_bytes())?;
             } else {
                 println!("Failed to create email file for {}", path);
             }
@@ -156,7 +174,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
         return Ok(IncomingEmail {
             to_addresses: recipients,
             from_address: sender,
-            body: body_data,
+            body: body_data.into(),
         });
     } else {
         println!("Client didnt call QUIT, forcing shutdown");
@@ -164,7 +182,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
         return Ok(IncomingEmail {
             to_addresses: recipients,
             from_address: sender,
-            body: body_data,
+            body: body_data.into(),
         });
     }
 }
