@@ -130,15 +130,14 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
         .map_windows(|&[eq, val1, val2]| {
             if eq == '=' {
                 if let (Some(a), Some(b)) = (val1.to_digit(16), val2.to_digit(16)) {
-                    vec![char::from_u32(a.shl(4) + b).unwrap()]
+                    char::from_u32(a.shl(4) + b).unwrap()
                 } else {
-                    vec![eq, val1, val2]
+                    eq
                 }
             } else {
-                vec![eq, val1, val2]
+                eq
             }
         })
-        .flatten()
         .collect();
     stream.write_all(b"250 Ok: Queued as\r\n")?;
     for recipient in recipients.iter().cloned() {
