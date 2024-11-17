@@ -9,11 +9,6 @@ use std::{
 use regex::Regex;
 
 fn main() {
-    let mut file = std::fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("./email_log")
-        .unwrap();
     let listener = TcpListener::bind("0.0.0.0:25").unwrap();
 
     for mut incoming in listener.incoming().flatten() {
