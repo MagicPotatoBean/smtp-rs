@@ -37,7 +37,7 @@ fn main() {
 }
 fn read_timeout(stream: &mut TcpStream) -> std::io::Result<Vec<u8>> {
     let mut buffer = Vec::new();
-    stream.set_read_timeout(Some(Duration::from_millis(100)))?;
+    stream.set_read_timeout(Some(Duration::from_millis(250)))?;
     if let Err(err) = stream.read_to_end(&mut buffer) {
         if std::io::ErrorKind::WouldBlock != err.kind() {
             println!("{err:?}");
