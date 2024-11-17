@@ -125,21 +125,30 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
     println!("Reading body");
     let body_data = read_timeout(stream)?;
     let mut body_data = String::from_utf8_lossy(&body_data).replace("=\r\n", "\n");
+
+    let mut skip_n = 0;
     body_data = body_data
         .chars()
         .map_windows(|&[eq, val1, val2]| {
-            if eq == '=' {
-                if let (Some(a), Some(b)) = (val1.to_digit(16), val2.to_digit(16)) {
-                    let chr = char::from_u32(a.shl(4) + b).unwrap();
-                    println!("FOUND ESCAPE CODE: {eq}{val1}{val2} replaced with {chr}");
-                    chr
+            if skip_n == 0 {
+                if eq == '=' {
+                    if let (Some(a), Some(b)) = (val1.to_digit(16), val2.to_digit(16)) {
+                        let chr = char::from_u32(a.shl(4) + b).unwrap();
+                        skip_n += 1;
+                        println!("FOUND ESCAPE CODE: {eq}{val1}{val2} replaced with {chr}");
+                        Some(chr)
+                    } else {
+                        Some(eq)
+                    }
                 } else {
-                    eq
+                    Some(eq)
                 }
             } else {
-                eq
+                skip_n -= 1;
+                None
             }
         })
+        .flatten()
         .collect();
     stream.write_all(b"250 Ok: Queued as\r\n")?;
     for recipient in recipients.iter().cloned() {
