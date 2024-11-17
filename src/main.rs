@@ -50,6 +50,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
     println!("Got request, introduced self");
     let data = read_timeout(stream)?;
     if data.len() <= 5 {
+        println!("Recieved: {:?} ~= {}", data, String::from_utf8_lossy(&data));
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
             "Client returned too short of a response",
