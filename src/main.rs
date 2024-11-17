@@ -47,16 +47,27 @@ fn read_timeout(stream: &mut TcpStream) -> std::io::Result<Vec<u8>> {
 }
 fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
     stream.write_all(b"220 zoe.soutter.com ESMTP Postfix\r\n")?;
-    println!("Got request, introduced self");
     let data = read_timeout(stream)?;
+    if data == b"" {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Client sent no data",
+        ));
+    }
+    println!("Got request, introduced self");
     if data.len() <= 5 {
-        println!("Recieved: {:?} ~= {}", data, String::from_utf8_lossy(&data));
+        println!(
+            "Recieved: DBG:\"{:?}\" ~= \"{}\"",
+            data,
+            String::from_utf8_lossy(&data)
+        );
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
             "Client returned too short of a response",
         ));
     };
     let name = &data[5..(data.len() - 2)];
+    println!("End user introduced: \"{}\"", String::from_utf8_lossy(name));
     stream.write_all(
         format!(
             "250 Hello {}, I am glad to meet you\r\n",
@@ -69,6 +80,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
     loop {
         let data = read_timeout(stream)?;
         if let Ok(val) = prse::try_parse!(String::from_utf8_lossy(&data), "MAIL FROM:<{}>\r\n") {
+            println!("MAIL FROM:<{val}>");
             let val: String = val;
             if let Some((username, domain)) = val.split_once("@") {
                 sender = Some(EmailAddress {
@@ -79,6 +91,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
             stream.write_all(b"250 Ok\r\n")?;
         } else if let Ok(val) = prse::try_parse!(String::from_utf8_lossy(&data), "RCPT TO:<{}>\r\n")
         {
+            println!("RCPT TO:<{val}>");
             let val: String = val;
             if let Some((username, domain)) = val.split_once("@") {
                 recipients.push(EmailAddress {
@@ -107,6 +120,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
             "Client addressed no recipients",
         ));
     }
+    println!("Reading body");
     let body_data = read_timeout(stream)?;
     stream.write_all(b"250 Ok: Queued as\r\n")?;
     for recipient in recipients.iter().cloned() {
@@ -116,10 +130,13 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
                 "./inboxes/{}@{}/{}@{}-{}.email",
                 recipient.username, recipient.domain, sender.username, sender.domain, time
             );
-            let _ = std::fs::create_dir(format!(
+            match std::fs::create_dir(format!(
                 "./inboxes/{}@{}",
                 recipient.username, recipient.domain
-            ));
+            )) {
+                Ok(_) => {}
+                Err(_) => {}
+            }
             if let Ok(mut file) = std::fs::OpenOptions::new()
                 .write(true)
                 .create_new(true)
