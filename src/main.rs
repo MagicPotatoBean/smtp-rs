@@ -145,7 +145,7 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
         .collect();
     stream.write_all(b"250 Ok: Queued as\r\n")?;
     for recipient in recipients.iter().cloned() {
-        if recipient.is_safe() && recipient.domain == "zoe.soutter.com" && sender.is_safe() {
+        if recipient.is_safe() && sender.is_safe() {
             let time = chrono::Local::now().format("%Y.%m.%d-%H:%M:%S").to_string();
             let path = format!(
                 "./inboxes/{}@{}/{}@{}-{}.email",
