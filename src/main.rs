@@ -148,21 +148,32 @@ fn parse_smtp_packet(stream: &mut TcpStream) -> std::io::Result<IncomingEmail> {
         if recipient.is_safe() && sender.is_safe() {
             let time = chrono::Local::now().format("%Y.%m.%d-%H:%M:%S").to_string();
             let path = format!(
-                "./inboxes/{}@{}/{}@{}-{}.email",
+                "./inboxes/{}@{}/{}@{}-{}.html",
                 recipient.username, recipient.domain, sender.username, sender.domain, time
             );
             match std::fs::create_dir(format!(
                 "./inboxes/{}@{}",
                 recipient.username, recipient.domain
             )) {
-                Ok(_) => {}
-                Err(_) => {}
+                Ok(_) => {
+                    println!(
+                        "Created inbox for {}@{}",
+                        recipient.username, recipient.domain
+                    )
+                }
+                Err(_) => {
+                    println!(
+                        "FAILED TO CREATE INBOX FOR {}@{}",
+                        recipient.username, recipient.domain
+                    )
+                }
             }
             if let Ok(mut file) = std::fs::OpenOptions::new()
                 .write(true)
                 .create_new(true)
                 .open(&path)
             {
+                println!("Write email to file");
                 file.write_all(body_data.as_bytes())?;
             } else {
                 println!("Failed to create email file for {}", path);
